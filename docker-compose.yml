@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  mining_pool:
+    build:
+      context: ./mining_pool
+      dockerfile: pool.Dockerfile
+    container_name: mining_pool
+    ports:
+      - "8000:8000"
+    networks:
+      - mining_network
+    environment:
+      - POOL_URL=${POOL_URL}
+    command:
+      uvicorn server:app --host 0.0.0.0 --port 8000 --reload # only during development
+
+  miner:
+    build:
+      context: ./miner
+      dockerfile: miner.Dockerfile
+    container_name: miner
+    command: python miner.py
+    environment:
+      - POOL_URL=${POOL_URL}
+      - PYTHONUNBUFFERED=${PYTHONUNBUFFERED}
+    networks:
+      - mining_network
+    depends_on:
+      - mining_pool
+
+networks:
+  mining_network:
+    driver: bridge
