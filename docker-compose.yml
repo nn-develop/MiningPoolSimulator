@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mining_pool:
     build:
@@ -11,24 +9,33 @@ services:
     networks:
       - mining_network
     environment:
-      - POOL_URL=${POOL_URL}
+      - SERVER_URL=mining_pool
     command:
       uvicorn server:app --host 0.0.0.0 --port 8000 --reload # only during development
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http:/mining_pool:8000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   miner:
     build:
       context: ./miner
       dockerfile: miner.Dockerfile
     container_name: miner
-    command: python miner.py
+    command:
+      python -u miner.py
     environment:
-      - POOL_URL=${POOL_URL}
+      - SERVER_URL=${SERVER_URL}
       - PYTHONUNBUFFERED=${PYTHONUNBUFFERED}
     networks:
       - mining_network
     depends_on:
-      - mining_pool
+      mining_pool:
+        condition: service_healthy
 
 networks:
   mining_network:
+    name: mining_pool
     driver: bridge
