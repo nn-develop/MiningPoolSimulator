@@ -1,20 +1,43 @@
-from fastapi import FastAPI
-import os
-from dotenv import load_dotenv
+from fastapi import FastAPI, APIRouter
+from routers import (
+    auth_router,
+    transaction_router,
+    work_router,
+    block_router,
+    performance_router,
+    reward_router,
+    miner_router
+)
 
-# Načteme .env soubor
-load_dotenv()
+def create_app() -> FastAPI:
+    """
+    Create and configure the FastAPI application.
 
-app = FastAPI()
+    Returns:
+        FastAPI: The configured FastAPI application instance.
+    """
+    app = FastAPI(
+        title="Mining Pool API",
+        description="API for managing mining pool operations",
+        version="1.0.0"
+    )
 
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}
+    api_router = APIRouter(prefix="/api")
 
-@app.get("/connect")
-async def connect():
-    return {"message": "Spojení navázáno!"}
+    api_router.include_router(auth_router.router, prefix="/auth")
+    api_router.include_router(transaction_router.router, prefix="/transactions")
+    api_router.include_router(work_router.router, prefix="/work")
+    api_router.include_router(block_router.router, prefix="/block")
+    api_router.include_router(performance_router.router, prefix="/performance")
+    api_router.include_router(reward_router.router, prefix="/rewards")
+    api_router.include_router(miner_router.router, prefix="/miners")
 
-@app.get("/connect")
-async def connect():
-    return {"message": "Spojení navázáno!"}
+    app.include_router(api_router)
+
+    return app
+
+app = create_app()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
